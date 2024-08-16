@@ -216,6 +216,7 @@ const AddExpert = () => {
                     onClick={() => handleRemoveSkill(index)}
                     className="ml-2 text-red-600 hover:text-red-900"
                   >
+                    
                     Remove
                   </button>
                 </div>
