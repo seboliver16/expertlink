@@ -3,16 +3,19 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { collection, setDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase.config'; // Ensure your Firebase config is correctly imported
+import { db } from '../firebase.config';
 
 const AddExpert = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<any>({
     name: '',
+    title: '',
+    summary: '',
     education: '',
     linkedinUrl: '',
+    linkedinId: '',
     experience: '',
-    title: '',
+    skills: [],
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -22,27 +25,31 @@ const AddExpert = () => {
   };
 
   const handleSubmit = async () => {
-  if (!pdfFile) return;
-  setIsLoading(true);
-  const formData = new FormData();
-  formData.append('file', pdfFile);
+    if (!pdfFile) {
+      console.error('No file selected');
+      return;
+    }
 
-  try {
-    // Correct the endpoint to match the file name
-    const response = await axios.post('/api/pdf-parse', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append('file', pdfFile);
 
-    setParsedData(response.data);
-  } catch (error) {
-    console.error('Error uploading and parsing the PDF:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    try {
+      console.log('Sending request to /api/pdf-parse');
+      const response = await axios.post('/api/pdf-parse', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
+      console.log('Response received:', response.data);
+      setParsedData(response.data);
+    } catch (error) {
+      console.error('Error uploading and parsing the PDF:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -52,23 +59,42 @@ const AddExpert = () => {
     }));
   };
 
+  const handleSkillsChange = (index: number, value: string) => {
+    const updatedSkills = [...parsedData.skills];
+    updatedSkills[index] = value;
+    setParsedData((prevState: any) => ({
+      ...prevState,
+      skills: updatedSkills,
+    }));
+  };
+
+  const handleAddSkill = () => {
+    setParsedData((prevState: any) => ({
+      ...prevState,
+      skills: [...prevState.skills, ''],
+    }));
+  };
+
+  const handleRemoveSkill = (index: number) => {
+    const updatedSkills = parsedData.skills.filter((_: string, i: number) => i !== index);
+    setParsedData((prevState: any) => ({
+      ...prevState,
+      skills: updatedSkills,
+    }));
+  };
+
   const handleSave = async () => {
     try {
-      // Extract LinkedIn ID from the URL to use as the document ID
-      const linkedinId = parsedData.linkedinUrl.split('/').pop();
+      const expertRef = doc(db, 'experts', parsedData.linkedinId);
 
-      // Reference to the 'experts' collection and set the document ID as LinkedIn ID
-      const expertRef = doc(db, 'experts', linkedinId);
-
-      await setDoc(expertRef, parsedData);
+      await setDoc(expertRef, {
+        ...parsedData,
+        skills: parsedData.skills.filter((skill: string) => skill.trim() !== ''), // Save only non-empty skills
+      });
 
       alert('Expert information saved successfully!');
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('Error saving expert data:', error.message);
-      } else {
-        console.error('Unexpected error:', error);
-      }
+      console.error('Error saving expert data:', error);
     }
   };
 
@@ -118,6 +144,15 @@ const AddExpert = () => {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">Summary</label>
+              <textarea
+                name="summary"
+                value={parsedData.summary}
+                onChange={handleChange}
+                className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700">Education</label>
               <textarea
                 name="education"
@@ -137,6 +172,16 @@ const AddExpert = () => {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">LinkedIn ID</label>
+              <input
+                type="text"
+                name="linkedinId"
+                value={parsedData.linkedinId}
+                onChange={handleChange}
+                className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700">Experience</label>
               <textarea
                 name="experience"
@@ -144,6 +189,33 @@ const AddExpert = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Skills</label>
+              {parsedData.skills.map((skill: string, index: number) => (
+                <div key={index} className="flex items-center mt-1">
+                  <input
+                    type="text"
+                    value={skill}
+                    onChange={(e) => handleSkillsChange(index, e.target.value)}
+                    className="block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSkill(index)}
+                    className="ml-2 text-red-600 hover:text-red-900"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleAddSkill}
+                className="mt-2 text-blue-600 hover:text-blue-900"
+              >
+                Add Skill
+              </button>
             </div>
             <button
               onClick={handleSave}
