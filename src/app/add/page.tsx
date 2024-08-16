@@ -16,6 +16,7 @@ const AddExpert = () => {
     linkedinId: '',
     experience: '',
     skills: [],
+    yearsOfExperience: 0,  // Added the yearsOfExperience field
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -139,6 +140,16 @@ const AddExpert = () => {
                 type="text"
                 name="title"
                 value={parsedData.title}
+                onChange={handleChange}
+                className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Years of Experience</label>
+              <input
+                type="number"
+                name="yearsOfExperience"
+                value={parsedData.yearsOfExperience}
                 onChange={handleChange}
                 className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
               />

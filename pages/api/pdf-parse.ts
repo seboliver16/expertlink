@@ -46,7 +46,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       console.log('PDF parsed successfully');
 
       // Extract information
-      const extractedData = await extractExpertInfo(pdfData.text);
+      const extractedData = extractExpertInfo(pdfData.text);
       res.status(200).json(extractedData);
     } catch (error) {
       console.error('Error parsing the PDF:', error);
@@ -61,19 +61,23 @@ const extractExpertInfo = (text: string) => {
     // Split the text into lines
     const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
 
-    // Name extraction using compromise
     let name = '';
     let title = '';
-    const sectionHeaders = ['contact', 'summary', 'experience', 'education', 'skills', 'top skills', 'languages', 'honors'];
     let summary = '';
     let skills: string[] = [];
     let experience = '';
     let education = '';
+    let linkedinUrl = '';
+    let linkedinId = '';
+    let yearsOfExperience = 0;
 
+    const sectionHeaders = ['contact', 'summary', 'experience', 'education', 'skills', 'top skills', 'languages', 'honors'];
     let isExperienceSection = false;
     let currentRole = '';
     let currentTime = '';
     let currentDescription = '';
+    let experienceStartYear = null;
+    let experienceEndYear = null;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -97,9 +101,9 @@ const extractExpertInfo = (text: string) => {
             summary = '';
             for (let j = i + 1; j < lines.length; j++) {
                 if (lines[j].toLowerCase().includes('education') || sectionHeaders.some(header => lines[j].toLowerCase().includes(header))) break;
-                summary += lines[j] + ' ';
+                summary += lines[j] + '\n';
             }
-            summary = summary.trim();
+            summary = summary.trim().replace(/\n/g, '\n\n'); // Add paragraph breaks
         }
 
         // Skills extraction
@@ -124,6 +128,16 @@ const extractExpertInfo = (text: string) => {
                 if (currentRole || currentTime || currentDescription) {
                     experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
                 }
+
+                const yearMatch = line.match(/(\b\d{4}\b)/g);
+                if (yearMatch) {
+                    const startYear = parseInt(yearMatch[0], 10);
+                    const endYear = yearMatch[1] ? parseInt(yearMatch[1], 10) : new Date().getFullYear();
+
+                    if (!experienceStartYear || startYear < experienceStartYear) experienceStartYear = startYear;
+                    if (!experienceEndYear || endYear > experienceEndYear) experienceEndYear = endYear;
+                }
+
                 currentRole = lines[i - 1]; // Role is assumed to be the line before the time period
                 currentTime = line; // Current line is the time period
                 currentDescription = ''; // Reset the description for the new role
@@ -154,8 +168,12 @@ const extractExpertInfo = (text: string) => {
         experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
     }
 
+    // Calculate years of experience
+    if (experienceStartYear && experienceEndYear) {
+        yearsOfExperience = experienceEndYear - experienceStartYear;
+    }
+
     // LinkedIn URL extraction: Look for a URL in the text
-    let linkedinUrl = '';
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (line.includes('linkedin.com/in/')) {
@@ -175,7 +193,6 @@ const extractExpertInfo = (text: string) => {
     linkedinUrl = linkedinUrl.replace(/\s*\(LinkedIn\)\s*/i, '').trim();
 
     // LinkedIn ID extraction: Extract ID from the LinkedIn URL
-    let linkedinId = '';
     if (linkedinUrl) {
         const match = linkedinUrl.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
         if (match && match[1]) {
@@ -192,5 +209,6 @@ const extractExpertInfo = (text: string) => {
         experience: experience.trim(),
         education: education.trim(),
         title: title.trim(),
+        yearsOfExperience, // Added the years of experience
     };
 };
