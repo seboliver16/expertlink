@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import axios from 'axios';
+import { collection, setDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase.config'; // Ensure your Firebase config is correctly imported
 
 const AddExpert = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -20,25 +22,27 @@ const AddExpert = () => {
   };
 
   const handleSubmit = async () => {
-    if (!pdfFile) return;
-    setIsLoading(true);
-    const formData = new FormData();
-    formData.append('file', pdfFile);
+  if (!pdfFile) return;
+  setIsLoading(true);
+  const formData = new FormData();
+  formData.append('file', pdfFile);
 
-    try {
-      const response = await axios.post('/api/parse-pdf', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+  try {
+    // Correct the endpoint to match the file name
+    const response = await axios.post('/api/pdf-parse', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
-      setParsedData(response.data);
-    } catch (error) {
-      console.error('Error uploading and parsing the PDF:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setParsedData(response.data);
+  } catch (error) {
+    console.error('Error uploading and parsing the PDF:', error);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -50,10 +54,21 @@ const AddExpert = () => {
 
   const handleSave = async () => {
     try {
-      await axios.post('/api/save-expert', { data: parsedData });
+      // Extract LinkedIn ID from the URL to use as the document ID
+      const linkedinId = parsedData.linkedinUrl.split('/').pop();
+
+      // Reference to the 'experts' collection and set the document ID as LinkedIn ID
+      const expertRef = doc(db, 'experts', linkedinId);
+
+      await setDoc(expertRef, parsedData);
+
       alert('Expert information saved successfully!');
     } catch (error) {
-      console.error('Error saving expert data:', error);
+      if (error instanceof Error) {
+        console.error('Error saving expert data:', error.message);
+      } else {
+        console.error('Unexpected error:', error);
+      }
     }
   };
 
