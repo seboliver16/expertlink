@@ -57,6 +57,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   form.parse(req);
 }
 
+// Inside the extractExpertInfo function
 const extractExpertInfo = (text: string) => {
   const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
 
@@ -80,6 +81,8 @@ const extractExpertInfo = (text: string) => {
   let currentDescription = '';
   let experienceStartYear: number | null = null;
   let experienceEndYear: number | null = null;
+  let educationEndYear: number | null = null;
+  let totalYearsOfExperience = 0;
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -123,7 +126,6 @@ const extractExpertInfo = (text: string) => {
     }
 
     if (isSummarySection) {
-      // Only stop the summary if the entire line is "Experience"
       if (line.trim().toLowerCase() === 'experience') {
         isSummarySection = false;
         isExperienceSection = true;
@@ -140,16 +142,14 @@ const extractExpertInfo = (text: string) => {
       continue;
     }
 
-    if (isSkillsSection && !isExperienceSection) {
-      // Stop extraction if we reach a non-skills section or the name
+    if (isSkillsSection && !isExperienceSection && name == '') {
       if (
         line.toLowerCase().includes('languages') ||
         line.trim().toLowerCase() === 'experience' ||
         line.toLowerCase().includes('summary') ||
         line.toLowerCase().includes('awards') ||
         line.toLowerCase().includes('honors') ||
-        line.toLowerCase().includes('education') ||
-        line.toLowerCase().includes(name.toLowerCase())
+        line.toLowerCase().includes('education')
       ) {
         isSkillsSection = false;
         continue;
@@ -174,10 +174,6 @@ const extractExpertInfo = (text: string) => {
       if (yearMatch) {
         const year = parseInt(yearMatch[0], 10);
 
-        if (!experienceStartYear || year < experienceStartYear) {
-          experienceStartYear = year;
-        }
-
         if (!experienceEndYear || year > experienceEndYear) {
           experienceEndYear = year;
         }
@@ -200,8 +196,8 @@ const extractExpertInfo = (text: string) => {
       }
     }
 
-    // Education extraction
-    if (line.toLowerCase().includes('education')) {
+    // Education extraction and capturing end year
+    if (line.toLowerCase() == 'education') {
       isEducationSection = true;
       isExperienceSection = false;
       isSkillsSection = false;
@@ -209,15 +205,13 @@ const extractExpertInfo = (text: string) => {
     }
 
     if (isEducationSection) {
-      if (
-        line.toLowerCase().includes('skills') ||
-        line.toLowerCase().includes('experience') ||
-        line.toLowerCase().includes('languages')
-      ) {
-        isEducationSection = false;
-        continue;
-      }
       education += line + ' ';
+
+      // Capture the last year mentioned in the education section as the education end year
+      const yearMatch = line.match(/\b\d{4}\b/);
+      if (yearMatch) {
+        educationEndYear = parseInt(yearMatch[0], 10);
+      }
     }
   }
 
@@ -225,15 +219,46 @@ const extractExpertInfo = (text: string) => {
     experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
   }
 
-  // Calculate years of experience
-  if (experienceStartYear && experienceEndYear) {
-    yearsOfExperience = experienceEndYear - experienceStartYear;
+  // Calculate years of experience after education end year
+  if (educationEndYear) {
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+
+      // Check if the line contains a date range
+      const dateRangeMatch = line.match(/(\b\d{4}\b).+(\b\d{4}\b|Present)/);
+      if (dateRangeMatch) {
+        const startYear = parseInt(dateRangeMatch[1], 10);
+        const endYear = dateRangeMatch[2] === 'Present' ? new Date().getFullYear() : parseInt(dateRangeMatch[2], 10);
+
+        // Only consider experience after the education end year
+        if (startYear >= educationEndYear) {
+          totalYearsOfExperience += endYear - startYear;
+        }
+      }
+    }
+    yearsOfExperience = totalYearsOfExperience;
+  } else {
+    // Fallback if no education end year is found
+    yearsOfExperience = 0;
   }
 
   // Ensure title follows the original rules: Title should NEVER be "Top Skills."
   if (title.toLowerCase().includes('top skills') || !title) {
     title = lines[1]; // Fallback to a default line if title extraction failed
   }
+
+  console.log(lines)
+  console.log({
+    name: name.trim(),
+    title: title.trim(),
+    summary: summary.trim(),
+    skills: skills.map(skill => skill.trim()),
+    experience: experience.trim(),
+    education: education.trim(),
+    yearsOfExperience,
+    linkedinUrl: linkedinUrl.trim(),
+    linkedinId: linkedinId.trim(),
+  })
 
   return {
     name: name.trim(),
