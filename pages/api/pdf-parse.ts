@@ -57,6 +57,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   form.parse(req);
 }
 
+// Inside the extractExpertInfo function
 const extractExpertInfo = (text: string) => {
   const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
 
@@ -66,45 +67,66 @@ const extractExpertInfo = (text: string) => {
   let skills: string[] = [];
   let experience = '';
   let education = '';
+  let yearsOfExperience = 0;
   let linkedinUrl = '';
   let linkedinId = '';
-  let yearsOfExperience = 0;
 
-  const sectionHeaders = ['contact', 'summary', 'experience', 'education', 'skills', 'top skills', 'languages', 'honors'];
-  let isExperienceSection = false;
   let isSummarySection = false;
+  let isSkillsSection = false;
+  let isExperienceSection = false;
+  let isEducationSection = false;
+
   let currentRole = '';
   let currentTime = '';
   let currentDescription = '';
-  let experienceStartYear = null;
-  let experienceEndYear = null;
-  let isFirstRoleTitle = true;
+  let experienceStartYear: number | null = null;
+  let experienceEndYear: number | null = null;
+  let educationEndYear: number | null = null;
+  let totalYearsOfExperience = 0;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    let line = lines[i];
 
-    // Ignore page numbers
+    // Debugging: Print each line to ensure nothing is getting skipped or altered
+    console.log(`Line ${i}: "${line}"`);
+    console.log(`isSummarySection: ${isSummarySection}, isSkillsSection: ${isSkillsSection}, isExperienceSection: ${isExperienceSection}, isEducationSection: ${isEducationSection}`);
+
     if (line.toLowerCase().includes('page')) continue;
 
-    // Name extraction
+    // Handle LinkedIn URL spanning multiple lines and remove "(LinkedIn)"
+    if (line.toLowerCase().includes('linkedin.com')) {
+      linkedinUrl += line.replace('(LinkedIn)', '').trim();
+      const nextLine = lines[i + 1];
+      if (nextLine && !nextLine.toLowerCase().includes('linkedin.com')) {
+        linkedinUrl += nextLine.replace('(LinkedIn)', '').trim();
+        i++;
+      }
+      const linkedinMatch = linkedinUrl.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
+      if (linkedinMatch) {
+        linkedinId = linkedinMatch[1];
+      }
+      continue;
+    }
+
+    // Name and Title extraction
     if (!name) {
       const doc = nlp(line);
       const people = doc.people().out('array');
-      if (people.length === 1 && !sectionHeaders.some(header => line.toLowerCase().includes(header))) {
+      if (people.length === 1 && !line.toLowerCase().includes('skills')) {
         name = people[0];
+        title = lines[i + 1];
         continue;
       }
     }
 
     // Summary extraction
-    if (line.toLowerCase().includes('summary')) {
+    if (line.toLowerCase() === 'summary') {
       isSummarySection = true;
-      summary = '';  // Clear summary to start fresh
       continue;
     }
 
     if (isSummarySection) {
-      if (line.toLowerCase().includes('experience')) {
+      if (line.trim().toLowerCase() === 'experience') {
         isSummarySection = false;
         isExperienceSection = true;
         continue;
@@ -112,118 +134,141 @@ const extractExpertInfo = (text: string) => {
       summary += line + ' ';
     }
 
-    // Experience extraction and formatting
-    if (isExperienceSection) {
-      if (!title && line.match(/\b\d{4}\b/)) {
-        title = lines[i - 1]; // Title is the line immediately above the first date
-      }
-
-      if (isFirstRoleTitle && !line.match(/\b\d{4}\b/)) {
-        currentRole = line; // First line after "Experience" is the title
-        isFirstRoleTitle = false;
-        continue;
-      }
-
-      if (line.match(/\b\d{4}\b/)) { // Detect a year as an indicator of a new role
-        if (currentRole || currentTime || currentDescription) {
-          experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
-        }
-
-        const yearMatch = line.match(/(\b\d{4}\b)/g);
-        if (yearMatch) {
-          const startYear = parseInt(yearMatch[0], 10);
-          const endYear = yearMatch[1] ? parseInt(yearMatch[1], 10) : new Date().getFullYear();
-
-          if (!experienceStartYear || startYear < experienceStartYear) experienceStartYear = startYear;
-          if (!experienceEndYear || endYear > experienceEndYear) experienceEndYear = endYear;
-        }
-
-        currentTime = line; // Current line is the time period
-        currentDescription = ''; // Reset the description for the new role
-        continue;
-      }
-
-      currentDescription += line + ' ';
-
-      // Check if the next line starts a new section or is a new date, which ends the current role description
-      if (sectionHeaders.some(header => line.toLowerCase().includes(header)) || line.match(/\b\d{4}\b/)) {
-        if (currentRole || currentTime || currentDescription) {
-          experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
-        }
-        currentRole = ''; // Clear the current role since we're done with it
-        isFirstRoleTitle = true; // Reset for the next role
-      }
-
+    // Skills extraction
+    if (line.toLowerCase().includes('top skills') || line.toLowerCase().includes('skills')) {
+      isSkillsSection = true;
+      isExperienceSection = false;
+      isEducationSection = false;
       continue;
     }
 
-    // Skills extraction
-    if (line.toLowerCase().includes('skills') || line.toLowerCase().includes('top skills')) {
-      skills = [];
-      for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].toLowerCase().includes('languages') || lines[j].toLowerCase().includes('honors') || sectionHeaders.some(header => lines[j].toLowerCase().includes(header))) break;
-        skills.push(lines[j]);
+    if (isSkillsSection && !isExperienceSection && name == '') {
+      if (
+        line.toLowerCase().includes('languages') ||
+        line.trim().toLowerCase() === 'experience' ||
+        line.toLowerCase().includes('summary') ||
+        line.toLowerCase().includes('awards') ||
+        line.toLowerCase().includes('honors') ||
+        line.toLowerCase().includes('education')
+      ) {
+        isSkillsSection = false;
+        continue;
       }
-      skills = skills.filter(skill => skill); // Remove empty strings
+      skills.push(line);
     }
 
-    // Education extraction
-    if (line.toLowerCase().includes('education')) {
-      education = '';
-      for (let j = i + 1; j < lines.length; j++) {
-        if (sectionHeaders.some(header => lines[j].toLowerCase().includes(header))) break;
-        education += lines[j] + ' ';
+    // Experience extraction and calculation of years of experience
+    if (line.trim().toLowerCase() === 'experience') {
+      isExperienceSection = true;
+      isSkillsSection = false;
+      isEducationSection = false;
+      currentRole = ''; // Reset the role, time, and description for new experience entry
+      currentTime = '';
+      currentDescription = '';
+      title = lines[i - 1];  // Extract title as the line above the first experience
+      continue;
+    }
+
+    if (isExperienceSection) {
+      const yearMatch = line.match(/\b\d{4}\b/);
+      if (yearMatch) {
+        const year = parseInt(yearMatch[0], 10);
+
+        if (!experienceEndYear || year > experienceEndYear) {
+          experienceEndYear = year;
+        }
+
+        if (currentRole || currentTime || currentDescription) {
+          experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
+        }
+        currentRole = lines[i - 1];
+        currentTime = line;
+        currentDescription = '';
+      } else if (!line.toLowerCase().includes('education') && currentRole) {
+        currentDescription += line + ' ';
       }
-      education = education.trim();
+
+      if (line.toLowerCase().includes('education') || i === lines.length - 1) {
+        experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
+        isExperienceSection = false;
+        isEducationSection = true;
+        continue;
+      }
+    }
+
+    // Education extraction and capturing end year
+    if (line.toLowerCase() == 'education') {
+      isEducationSection = true;
+      isExperienceSection = false;
+      isSkillsSection = false;
+      continue;
+    }
+
+    if (isEducationSection) {
+      education += line + ' ';
+
+      // Capture the last year mentioned in the education section as the education end year
+      const yearMatch = line.match(/\b\d{4}\b/);
+      if (yearMatch) {
+        educationEndYear = parseInt(yearMatch[0], 10);
+      }
     }
   }
 
-  // Ensure the last role gets added to the experience string
   if (currentRole || currentTime || currentDescription) {
     experience += `${currentRole}\n${currentTime}\n${currentDescription.trim()}\n\n`;
   }
 
-  // Calculate years of experience
-  if (experienceStartYear && experienceEndYear) {
-    yearsOfExperience = experienceEndYear - experienceStartYear;
-  }
+  // Calculate years of experience after education end year
+  if (educationEndYear) {
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
 
-  // LinkedIn URL extraction: Look for a URL in the text
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.includes('linkedin.com/in/')) {
-      linkedinUrl = line;
-      // Check if the next line might complete the URL
-      if (!line.endsWith('/')) {
-        const nextLine = lines[i + 1] || '';
-        if (!nextLine.startsWith(' ')) { // Ensure it's not an unrelated line
-          linkedinUrl += nextLine;
+      // Check if the line contains a date range
+      const dateRangeMatch = line.match(/(\b\d{4}\b).+(\b\d{4}\b|Present)/);
+      if (dateRangeMatch) {
+        const startYear = parseInt(dateRangeMatch[1], 10);
+        const endYear = dateRangeMatch[2] === 'Present' ? new Date().getFullYear() : parseInt(dateRangeMatch[2], 10);
+
+        // Only consider experience after the education end year
+        if (startYear >= educationEndYear) {
+          totalYearsOfExperience += endYear - startYear;
         }
       }
-      break;
     }
+    yearsOfExperience = totalYearsOfExperience;
+  } else {
+    // Fallback if no education end year is found
+    yearsOfExperience = 0;
   }
 
-  // Specifically remove "(LinkedIn)" from the URL if it is present
-  linkedinUrl = linkedinUrl.replace(/\s*\(LinkedIn\)\s*/i, '').trim();
-
-  // LinkedIn ID extraction: Extract ID from the LinkedIn URL
-  if (linkedinUrl) {
-    const match = linkedinUrl.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
-    if (match && match[1]) {
-      linkedinId = match[1];
-    }
+  // Ensure title follows the original rules: Title should NEVER be "Top Skills."
+  if (title.toLowerCase().includes('top skills') || !title) {
+    title = lines[1]; // Fallback to a default line if title extraction failed
   }
 
-  return {
-    name,
-    linkedinUrl: linkedinUrl.trim(),
-    linkedinId,
+  console.log(lines)
+  console.log({
+    name: name.trim(),
+    title: title.trim(),
     summary: summary.trim(),
     skills: skills.map(skill => skill.trim()),
     experience: experience.trim(),
     education: education.trim(),
+    yearsOfExperience,
+    linkedinUrl: linkedinUrl.trim(),
+    linkedinId: linkedinId.trim(),
+  })
+
+  return {
+    name: name.trim(),
     title: title.trim(),
-    yearsOfExperience, // Added the years of experience
+    summary: summary.trim(),
+    skills: skills.map(skill => skill.trim()),
+    experience: experience.trim(),
+    education: education.trim(),
+    yearsOfExperience,
+    linkedinUrl: linkedinUrl.trim(),
+    linkedinId: linkedinId.trim(),
   };
 };
