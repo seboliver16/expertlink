@@ -1,9 +1,6 @@
 {
-  "database": {
-    "rules": "database.rules.json"
-  },
   "hosting": {
-    "source": ".",
+    "public": ".next",
     "ignore": [
       "firebase.json",
       "**/.*",
