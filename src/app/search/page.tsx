@@ -1,20 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase.config";
 
-// Helper function to generate a random shade of blue
-const getRandomBlueShade = () => {
-  const shades = [
-    "#0077B6", // Ocean Blue
-    "#0096C7", // Cerulean Blue
-    "#00B4D8", // Cyan Blue
-    "#48CAE4", // Sky Blue
-    "#90E0EF", // Light Blue
-  ];
-  return shades[Math.floor(Math.random() * shades.length)];
-};
+// Static blue shade for all initials
+const INITIALS_BACKGROUND_COLOR = "#0077B6"; // Ocean Blue
 
 // Helper function to extract initials from a name
 const getInitials = (name: string) => {
@@ -24,64 +17,34 @@ const getInitials = (name: string) => {
     .join("");
 };
 
+// Helper function to strip unwanted characters (like emojis) from a string
+const stripWeirdCharacters = (text: string) => {
+  return text.replace(/[^a-zA-Z0-9 .,!?]/g, "");
+};
+
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [expandedIndices, setExpandedIndices] = useState<Set<number>>(new Set());
 
-  const experts = [
-    {
-      name: "John Doe",
-      title: "Senior Software Engineer",
-      bio: "John is a seasoned software engineer with over 10 years of experience in building scalable web applications and leading engineering teams.",
-    },
-    {
-      name: "Jane Smith",
-      title: "Data Scientist",
-      bio: "Jane specializes in machine learning and data analytics, helping companies derive actionable insights from big data.",
-    },
-    {
-      name: "Mike Johnson",
-      title: "UX Designer",
-      bio: "Mike is a creative UX designer who focuses on creating intuitive and user-friendly interfaces for digital products.",
-    },
-    {
-      name: "Sarah Brown",
-      title: "Product Manager",
-      bio: "Sarah is an experienced product manager known for her strategic vision and ability to drive product innovation and growth.",
-    },
-    {
-      name: "James Williams",
-      title: "Marketing Specialist",
-      bio: "James is a marketing expert with a talent for crafting compelling campaigns that boost brand awareness and engagement.",
-    },
-    {
-      name: "Patricia Taylor",
-      title: "Financial Analyst",
-      bio: "Patricia is a skilled financial analyst who excels at evaluating investment opportunities and managing portfolios.",
-    },
-    {
-      name: "Robert Davis",
-      title: "Project Manager",
-      bio: "Robert is a project manager with a track record of successfully leading cross-functional teams and delivering complex projects.",
-    },
-    {
-      name: "Linda Martinez",
-      title: "HR Manager",
-      bio: "Linda is an HR manager dedicated to fostering a positive work culture and enhancing employee engagement and development.",
-    },
-    {
-      name: "David Wilson",
-      title: "Operations Manager",
-      bio: "David is an operations manager with expertise in optimizing business processes and improving operational efficiency.",
-    },
-    {
-      name: "Mary Anderson",
-      title: "Business Consultant",
-      bio: "Mary is a business consultant who provides strategic advice and solutions to help businesses achieve their goals.",
-    },
-  ];
+  useEffect(() => {
+    const fetchExperts = async () => {
+      setLoading(true);
+      try {
+        const expertsCollection = collection(db, "experts");
+        const expertsSnapshot = await getDocs(expertsCollection);
+        const expertsList = expertsSnapshot.docs.map((doc) => doc.data());
+        setResults(expertsList);
+      } catch (error) {
+        console.error("Error fetching experts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExperts();
+  }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -89,14 +52,15 @@ export default function Search() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    // Simulate a network request or processing delay
-    setTimeout(() => {
-      // Set the results to the sample data for demonstration
-      setResults(experts);
-      setLoading(false);
-    }, 2000); // 2-second delay
+    const filteredResults = results.filter(
+      (expert) =>
+        expert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        expert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        stripWeirdCharacters(expert.summary)
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+    );
+    setResults(filteredResults);
   };
 
   const toggleExpanded = (index: number) => {
@@ -111,22 +75,52 @@ export default function Search() {
     });
   };
 
+  const formatExperience = (experience: string) => {
+    // Each experience block is separated by two newline characters "\n\n"
+    const blocks = experience.split("\n\n").filter((block) => block.trim() !== "");
+
+    return (
+      <div className="relative">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
+        <div className="ml-6 space-y-4">
+          {blocks.map((block, index) => {
+            const lines = block
+              .split("\n")
+              .map((line) => line.trim())
+              .filter((line) => line !== "");
+            const title = lines[0] || "";
+            const date = lines[1] || "";
+            const description = lines.slice(2).join(" ");
+
+            return (
+              <div key={index} className="pl-4">
+                <h4 className="font-bold text-md">{title}</h4>
+                <p className="text-gray-700 text-sm">{date}</p>
+                {description && <p className="text-gray-600 mt-1 text-sm">{description}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-white px-4 py-16">
       {/* Logo Section */}
-      <div className="flex flex-col items-center mb-12 w-full">
+      <div className="flex flex-col items-center mb-8 w-full">
         <div className="flex items-center">
-          <img src="/Minerva.svg" alt="Minerva Logo" width={60} height={60} />
-          <h1 className="text-5xl font-semibold text-gray-900 ml-3">Minerva</h1>
+          <img src="/Minerva.svg" alt="Minerva Logo" width={50} height={50} />
+          <h1 className="text-4xl font-semibold text-gray-900 ml-3">Minerva</h1>
         </div>
-        <form onSubmit={handleSearchSubmit} className="w-full max-w-4xl mt-4">
+        <form onSubmit={handleSearchSubmit} className="w-full max-w-3xl mt-4">
           <div className="relative flex items-center">
             <input
               type="text"
               placeholder="Browse for experts..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full py-4 pl-5 pr-16 text-lg text-gray-900 border border-gray-300 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full py-3 pl-5 pr-16 text-base text-gray-900 border border-gray-300 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             />
             <button
               type="submit"
@@ -153,40 +147,89 @@ export default function Search() {
 
       {/* Loading Animation */}
       {loading && (
-        <div className="flex items-center justify-center py-10">
+        <div className="flex items-center justify-center py-8">
           <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-600" />
-          <span className="ml-4 text-xl font-semibold text-gray-700">Thinking...</span>
+          <span className="ml-4 text-xl font-semibold text-gray-700">Loading...</span>
         </div>
       )}
 
       {/* Results Section */}
       {!loading && results.length > 0 && (
-        <div className="flex flex-col gap-4 mt-8 w-full max-w-4xl">
+        <div className="flex flex-col gap-4 mt-6 w-full max-w-3xl">
           {results.map((expert, index) => (
             <div
               key={index}
-              className="flex flex-col items-start bg-gray-100 p-4 rounded-lg shadow-md transition-all duration-300 cursor-pointer"
-              onClick={() => toggleExpanded(index)}
+              className={`flex flex-col items-start bg-white border border-gray-200 rounded-lg shadow-lg p-4 transform transition-all duration-300 hover:scale-105 cursor-pointer ${expandedIndices.has(index) ? 'bg-gray-50' : ''}`}
+              onClick={(e) => {
+                // Prevent expanding the bio when clicking on the checkbox
+                if (!(e.target as HTMLElement).matches('input[type="checkbox"]')) {
+                  toggleExpanded(index);
+                }
+              }}
             >
-              <div className="flex items-center">
+              <div className="flex items-center w-full">
                 <div
-                  className="flex items-center justify-center w-12 h-12 rounded-full text-white text-lg font-bold"
-                  style={{ backgroundColor: getRandomBlueShade() }}
+                  className="flex items-center justify-center w-12 h-12 rounded-full text-white text-lg font-bold shadow-lg"
+                  style={{ backgroundColor: INITIALS_BACKGROUND_COLOR }}
                 >
                   {getInitials(expert.name)}
                 </div>
+                <div className="ml-4 flex-grow">
+                  <h3 className="text-xl font-bold text-gray-900">{expert.name}</h3>
+                  <p className="text-base text-gray-700">{expert.title}</p>
+                </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-bold text-gray-900">{expert.name}</h3>
-                  <p className="text-gray-700">{expert.title}</p>
+                  <input
+                    type="checkbox"
+                    className="form-checkbox h-6 w-6 text-blue-600"
+                  />
                 </div>
               </div>
               {expandedIndices.has(index) && (
-                <div className="mt-4 text-gray-800">
-                  <p>{expert.bio}</p>
+                <div className="mt-4 text-gray-800 space-y-4">
+                  <p className="text-sm space-y-2">
+                    <strong>Summary:</strong>{" "}
+                    {stripWeirdCharacters(expert.summary)
+                      .split("\n")
+                      .map((paragraph: string, i: number) => (
+                        <span key={i} className="block mt-2">{paragraph}</span>
+                      ))}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Education:</strong> {expert.education}
+                  </p>
+                  <div className="text-sm space-y-4">
+                    <strong>Experience:</strong>
+                    {formatExperience(expert.experience)}
+                  </div>
+                  <p className="text-sm">
+                    <strong>Skills:</strong> {expert.skills.join(", ")}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Years of Experience:</strong> {expert.yearsOfExperience}
+                  </p>
+                  <p className="text-sm">
+                    <strong>LinkedIn:</strong>{" "}
+                    <a
+                      href={expert.linkedinUrl}
+                      target="_blank"
+                      className="text-blue-600 hover:underline"
+                      onClick={(e) => e.stopPropagation()} // Prevent expanding bio when clicking LinkedIn link
+                    >
+                      {expert.linkedinUrl}
+                    </a>
+                  </p>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* No results message */}
+      {!loading && results.length === 0 && (
+        <div className="flex items-center justify-center py-8">
+          <span className="text-xl font-semibold text-gray-700">No experts found.</span>
         </div>
       )}
     </main>
