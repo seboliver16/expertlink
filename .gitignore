@@ -34,3 +34,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ignore node_modules
+node_modules/
+
+# Ignore environment variable files
+.env
+
+# Ignore log files
+*.log
+
+# Ignore build files
+dist/
+build/
+
+# Ignore all images (example)
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+/.firebase
