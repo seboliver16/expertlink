@@ -393,7 +393,7 @@ const ExpertCategories: React.FC<ExpertCategoriesProps> = ({
                   <p className="text-sm">
                     <strong>LinkedIn:</strong>{" "}
                     <a
-                      href={`https://${experts[expertId]?.linkedinUrl.replace(/^(https?:\/\/)?(www\.)?linkedin\.com\//, 'www.linkedin.com/')}`}
+                      href={`https://${experts[expertId]?.linkedinUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"

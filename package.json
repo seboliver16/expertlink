@@ -21,6 +21,7 @@
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "react": "^18",
+    "react-day-picker": "^9.0.8",
     "react-dom": "^18",
     "uuid": "^10.0.0",
     "word-list": "^4.0.0"

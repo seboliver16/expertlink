@@ -161,7 +161,7 @@ const ConfirmQuestions: React.FC<ConfirmQuestionsProps> = ({
                       {expert?.email ? (
                         <a href={`mailto:${expert.email}`} className="text-blue-600 hover:underline">{expert.email}</a>
                       ) : expert?.linkedinUrl ? (
-                        <a href={expert.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        <a href={`https:${expert.linkedinUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                           LinkedIn Profile
                         </a>
                       ) : (

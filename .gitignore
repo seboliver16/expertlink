@@ -1,20 +1,19 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.js
 .yarn/install-state.gz
 
 # testing
-/coverage
+coverage/
 
 # next.js
-/.next/
+.next/
 /out/
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -27,6 +26,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel
@@ -35,23 +35,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Ignore node_modules
-node_modules/
-
-# Ignore environment variable files
-.env
-
-# Ignore log files
+# log files
 *.log
 
-# Ignore build files
-dist/
-build/
+# images (if you want to ignore them)
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
 
-# Ignore all images (example)
-*.png
-*.jpg
-*.jpeg
-*.gif
-
-/.firebase
+# firebase
+.firebase

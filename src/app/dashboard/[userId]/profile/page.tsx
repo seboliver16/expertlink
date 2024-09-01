@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../../firebase.config";
 import { useUser } from "../../../UserContext";
-import {  signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import ExperienceModal from "./ExperienceModal";
 
 const ExpertProfilePage = () => {
@@ -125,8 +125,11 @@ const ExpertProfilePage = () => {
 
   return (
     <main className="flex flex-col lg:flex-row min-h-screen bg-white">
-      {/* Left Section */}
-      <div className="w-full lg:w-2/5 p-8 text-sm">
+      {/* Divider */}
+      <div className="hidden lg:block w-10 bg-white"></div>
+
+      {/* Left Section - Sticky on Desktop */}
+      <div className="w-full lg:w-2/5 p-8 text-sm lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-extrabold text-blue-600">Edit Profile</h1>
           <div className="space-x-4">
@@ -224,24 +227,14 @@ const ExpertProfilePage = () => {
               Add Skill
             </button>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700">Experience</label>
-            <textarea
-              name="experience"
-              value={profileData?.experience || ""}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-xs transition-all"
-              onClick={() => setIsExperienceModalOpen(true)} // Open the modal when clicked
-            />
-          </div>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="hidden lg:block w-1 bg-gray-300"></div>
+      <div className="hidden lg:block w-1 bg-gray-100 mt-8 mb-8"></div>
 
-      {/* Right Section - Profile Preview */}
-      <div className="w-full lg:w-3/5 p-8 text-sm overflow-y-auto">
+      {/* Right Section - Scrollable */}
+      <div className="w-full lg:w-3/5 p-8 text-sm overflow-y-auto lg:h-screen">
         <h2 className="text-2xl font-extrabold text-gray-800 mb-6">Profile Preview</h2>
         <div className="space-y-4">
           <div>
@@ -273,19 +266,33 @@ const ExpertProfilePage = () => {
             </ul>
           </div>
           <div>
-            <h3 className="text-xs font-semibold text-gray-800">Experience</h3>
+            <h3 className="text-xs font-semibold text-gray-800 mb-4">Experience</h3>
             {formatExperience(profileData?.experience || "")}
+            <button
+              onClick={() => setIsExperienceModalOpen(true)}
+              className="mt-4 py-2 px-4 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow-lg hover:bg-blue-700 transition"
+            >
+              Edit Experience
+            </button>
           </div>
           <div>
             <h3 className="text-xs font-semibold text-gray-800">LinkedIn URL</h3>
             <p className="text-xs text-blue-600">
-              <a href={profileData?.linkedinUrl} target="_blank" rel="noopener noreferrer">
-                {profileData?.linkedinUrl}
-              </a>
+              <a
+  href={`https://${profileData.linkedinUrl}`}
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  {profileData?.linkedinUrl}
+</a>
+
             </p>
           </div>
         </div>
       </div>
+
+      {/* Divider */}
+      <div className="hidden lg:block w-20 bg-white"></div>
 
       {/* Experience Modal */}
       {isExperienceModalOpen && (
