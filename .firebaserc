@@ -1,5 +1,12 @@
 {
   "projects": {
     "default": "expert-link-pro"
-  }
+  },
+  "targets": {},
+  "etags": {
+    "expert-link-pro": {
+      "extensionInstances": {}
+    }
+  },
+  "dataconnectEmulatorConfig": {}
 }

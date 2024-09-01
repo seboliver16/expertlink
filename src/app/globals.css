@@ -29,3 +29,69 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Prevent overscroll on mobile devices */
+html,
+body {
+  overscroll-behavior: none;
+  /* Prevents the bounce effect on scroll */
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  overflow-y: scroll;
+  /* Ensures the page still scrolls normally, but without bouncing */
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scrolling on iOS devices */
+}
+
+/* global.css */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  overflow-y: auto;
+  background-color: #f8f9fa;
+  /* Adjust as needed */
+  transition: width 0.3s ease;
+}
+
+.search-container {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  z-index: 10;
+  background-color: white;
+  /* Ensure the background is white */
+  padding-bottom: 16px;
+}
+
+.results-container {
+  margin-top: 80px;
+  /* Adjust based on the height of your search bar */
+  padding: 16px;
+  overflow-y: auto;
+  height: calc(100vh - 80px);
+  /* Full height minus the height of the search bar */
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.modal-container {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  z-index: 50;
+}
