@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase.config';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
+import { db } from "../../firebase.config";
 import Image from "next/image";
-import { useUser } from '../../UserContext';
-import Project from '@/app/models/project';
+import { useUser } from "../../UserContext";
+import Project from "@/app/models/project";
 
 const DashboardPage = () => {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
-  const [countdown, setCountdown] = useState(15); // Initial countdown time
+  const [countdown, setCountdown] = useState(15); // Add countdown state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
@@ -21,10 +21,13 @@ const DashboardPage = () => {
     const checkAuthorization = async () => {
       setLoading(true);
       if (user) {
+        if (!user.name) {
+          await fetchAndSetUserName();
+        }
         if (user.type !== "expert") {
           setUnauthorized(true);
           setLoading(false);
-          startCountdown(); // Start countdown when unauthorized
+          startCountdown();
         } else {
           await fetchProjects();
           setLoading(false);
@@ -32,7 +35,30 @@ const DashboardPage = () => {
       } else {
         setUnauthorized(true);
         setLoading(false);
-        startCountdown(); // Start countdown when no user is found
+        startCountdown();
+      }
+    };
+
+    const fetchAndSetUserName = async () => {
+      if (user?.linkedinId) {
+        const docRef = doc(db, "experts", user.linkedinId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const name = docSnap.data()?.name;
+          if (name) {
+            const updatedUser = {
+              ...user,
+              name,
+              addProject: user.addProject,
+              updateProjectStatus: user.updateProjectStatus,
+              useCredit: user.useCredit,
+              addCredit: user.addCredit,
+            };
+            setUser(updatedUser);
+            await updateDoc(doc(db, "users", user.email), { name });
+          }
+        }
       }
     };
 
@@ -42,23 +68,21 @@ const DashboardPage = () => {
           if (prevCountdown > 0) {
             return prevCountdown - 1;
           } else {
-            clearInterval(countdownInterval); // Clear the interval when countdown reaches 0
-            router.push('/auth'); // Redirect when countdown reaches 0
+            clearInterval(countdownInterval);
+            router.push("/auth");
             return 0;
           }
         });
-      }, 1000); // Countdown every 1 second
+      }, 1000);
 
-      return () => clearInterval(countdownInterval); // Cleanup interval on component unmount
+      return () => clearInterval(countdownInterval);
     };
 
     const fetchProjects = async () => {
       if (user && user.type === "expert") {
         try {
           const projectsRef = collection(db, `projects/${user.email}/userProjects`);
-          
           const projectsSnapshot = await getDocs(projectsRef);
-          console.log(projectsSnapshot.docs)
           const projectsList = projectsSnapshot.docs.map((doc) => {
             const data = doc.data();
             return new Project(
@@ -82,6 +106,21 @@ const DashboardPage = () => {
 
     checkAuthorization();
   }, [user, router]);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "Opportunity":
+        return "🟡"; // Yellow dot for Opportunity
+      case "Answered":
+        return "🟢"; // Green dot for Answered
+      case "Scheduled":
+        return "🔵"; // Blue dot for Scheduled
+      case "Completed":
+        return "🟣"; // Purple dot for Completed
+      default:
+        return "⚪"; // White dot for undefined status
+    }
+  };
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -202,6 +241,14 @@ const DashboardPage = () => {
           <Image src="/logo.png" alt="Minerva Logo" width={50} height={50} />
           <h1 className="text-4xl font-bold text-blue-600">Dashboard</h1>
         </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/profile")}
+            className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white cursor-pointer transition-all"
+          >
+            {user?.name?.[0] || "?"}
+          </button>
+        </div>
       </header>
 
       {/* Main Content Section */}
@@ -210,10 +257,12 @@ const DashboardPage = () => {
         {projects.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
             {projects.map((project) => (
-              <div key={project.id} className="bg-white p-4 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold text-gray-800">{project.title}</h2>
-                <p className="text-gray-600 mt-2">{project.title}</p>
-                <p className="text-gray-600 mt-2">Description: {project.description}</p>
+              <div key={project.id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-800">{project.title}</h2>
+                  <span className="text-lg">{getStatusIcon(project.expertStatus)}</span>
+                </div>
+                <p className="text-gray-600 mt-2">{project.description}</p>
                 <button
                   onClick={() => router.push(`/projects/${project.id}`)}
                   className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-all"
