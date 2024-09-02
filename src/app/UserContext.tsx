@@ -31,39 +31,35 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = userDoc.data();
 
           // Create a Map of Project instances from Firebase data
-          // Assuming the structure of projectData matches the Project class properties
-const projectsMap = new Map<string, Project>(
-  Object.entries(userData.projects || {}).map(([id, projectData]) => {
-    const data = projectData as {
-      title: string;
-      description: string;
-      questions: string[];
-      expertStatus: string;
-      seekerStatus: string;
-      categories: string[];
-      askingPrice: number;
-      availability: string[];
-    };
+          const projectsMap = new Map<string, Project>(
+            Object.entries(userData.projects || {}).map(([id, projectData]) => {
+              const data = projectData as {
+                title: string;
+                description: string;
+                questions: string[];
+                expertStatus: Record<string, string>;
+                seekerStatus: Record<string, string>;
+                categories: string[];
+                askingPrice: number;
+                availability: string[];
+              };
 
-    return [
-      id,
-      new Project(
-        id,
-        data.title,
-        data.description,
-        data.questions || [],
-        data.expertStatus || 'Open Opportunity',
-        data.seekerStatus || 'Pending Response',
-        data.categories || [],
-        data.askingPrice || 0,
-        data.availability || []
-      ),
-    ];
-  })
-);
-
-
-          const statusMap = new Map<string, string>(Object.entries(userData.status || {}));
+              return [
+                id,
+                new Project(
+                  id,
+                  data.title,
+                  data.description,
+                  data.questions || [],
+                  new Map(Object.entries(data.expertStatus || {})),
+                  new Map(Object.entries(data.seekerStatus || {})),
+                  data.categories || [],
+                  data.askingPrice || 0,
+                  data.availability || []
+                ),
+              ];
+            })
+          );
 
           // Set the user state with the data pulled from Firebase
           setUser(new User(
@@ -74,11 +70,10 @@ const projectsMap = new Map<string, Project>(
             userData.linkedinId || '',
             projectsMap,
             userData.credits || 0,
-            statusMap,
+            new Map(Object.entries(userData.status || {})),
             userData.projectsCompleted || 0,
             userData.lifetimeIncome || 0
           ));
-
         } else {
           console.log("User document does not exist.");
           // Handle this case appropriately if needed
@@ -117,5 +112,3 @@ export const useUser = () => {
   }
   return context;
 };
-
-

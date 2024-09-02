@@ -1,6 +1,5 @@
 import Project from "./project";
 
-
 class User {
   id: string;
   name: string;
@@ -9,9 +8,9 @@ class User {
   linkedinId: string;
   projects: Map<string, Project>;
   credits: number;
-  status?: Map<string, string>;
-  projectsCompleted?: number;
-  lifetimeIncome?: number;
+  status: Map<string, string>;
+  projectsCompleted: number;
+  lifetimeIncome: number;
 
   constructor(
     id: string,
@@ -37,14 +36,16 @@ class User {
     this.lifetimeIncome = lifetimeIncome;
   }
 
+  // Method to add a project to the user's list of projects
   addProject(project: Project) {
     this.projects.set(project.id, project);
   }
 
-  updateProjectStatus(projectId: string, newExpertStatus: string, newSeekerStatus: string) {
+  // Method to update the status of a project by its ID
+  updateProjectStatus(seekerId: string, projectId: string, newExpertStatus: string, newSeekerStatus: string) {
     const project = this.projects.get(projectId);
     if (project) {
-      project.updateStatus(newExpertStatus, newSeekerStatus);
+      project.updateStatus(seekerId, newExpertStatus, newSeekerStatus);
     }
   }
 

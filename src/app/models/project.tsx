@@ -3,8 +3,8 @@ class Project {
   title: string;
   description: string;
   questions: string[];
-  expertStatus: string;
-  seekerStatus: string;
+  expertStatus: Map<string, string>;
+  seekerStatus: Map<string, string>;
   askingPrice?: number;
   availability?: string[];
   lastUpdated: string;
@@ -15,8 +15,8 @@ class Project {
     title: string,
     description: string,
     questions: string[],
-    expertStatus: string,
-    seekerStatus: string,
+    expertStatus: Map<string, string>,
+    seekerStatus: Map<string, string>,
     categories: string[] = ["General"],
     askingPrice?: number,
     availability?: string[],
@@ -33,9 +33,9 @@ class Project {
     this.lastUpdated = new Date().toISOString();
   }
 
-  updateStatus(newExpertStatus: string, newSeekerStatus: string) {
-    this.expertStatus = newExpertStatus;
-    this.seekerStatus = newSeekerStatus;
+  updateStatus(seekerId: string, newExpertStatus: string, newSeekerStatus: string) {
+    this.expertStatus.set(seekerId, newExpertStatus);
+    this.seekerStatus.set(seekerId, newSeekerStatus);
     this.lastUpdated = new Date().toISOString();
   }
 

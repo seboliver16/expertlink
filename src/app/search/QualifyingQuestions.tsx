@@ -63,35 +63,58 @@ const QualifyingQuestions: React.FC<QualifyingQuestionsProps> = ({
     console.error("User is not available");
     return;
   }
+
   if (!isFormValid()) return;
 
   const projectId = uuidv4(); // Generate a UUID for the project ID
-  const now = new Date().toISOString();
+
+  const description = "A detailed description of the project"; // Replace with the actual description from your form
+  const askingPrice = 0; // Replace with the actual asking price from your form
+  const availability = [""]; // Replace with actual availability from your form
+
+  // Initialize the expertStatus and seekerStatus as empty maps
+  const expertStatus = new Map<string, string>();
+  const seekerStatus = new Map<string, string>();
+
+  // Example of setting values, you can remove these or set as needed
+  expertStatus.set("exampleExpertId", "Open Opportunity");
+  seekerStatus.set("exampleSeekerId", "Pending Response");
 
   const projectData = new Project(
     projectId,
     projectTitle,
-    "Provide a detailed description here", // Replace with the actual description
+    description,
     questions.filter((q) => q.trim().length > 0),
-    "Open Opportunity", // Expert status
-    "Pending Response", // Seeker status
-    ["General"] // Categories
+    expertStatus, // Expert status map
+    seekerStatus, // Seeker status map
+    ["General"],
+    askingPrice,
+    availability
   );
 
   try {
+    // Convert Map to plain object for Firestore
+    const projectDataForFirestore = {
+      ...projectData,
+      expertStatus: Object.fromEntries(expertStatus),
+      seekerStatus: Object.fromEntries(seekerStatus),
+    };
+
     // Save the project to Firestore under the expert seeker’s projects
     const userProjectRef = doc(db, `projects/${user.id}/userProjects/${projectId}`);
-    await setDoc(userProjectRef, { ...projectData });
+    await setDoc(userProjectRef, projectDataForFirestore);
 
     user.addProject(projectData);
     updateSidebar(); // Update the sidebar with the new project
 
-    router.push(`/project/${projectId}`); // Navigate to the project search page
+    router.push(`/project/${projectId}`); // Navigate to the project page
   } catch (error) {
     console.error("Error creating project: ", error);
   }
 };
 
+
+  
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">

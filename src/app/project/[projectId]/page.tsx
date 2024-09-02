@@ -298,11 +298,14 @@ const getColorForPercentage = (percentage: number) => {
           <span className="font-semibold text-gray-700">Role:</span> {projectData.role}
         </p>
         <p className="text-lg">
-          <span className="font-semibold text-gray-700">Current Companies:</span> {projectData.currentCompanies.join(', ')}
-        </p>
-        <p className="text-lg">
-          <span className="font-semibold text-gray-700">Previous Companies:</span> {projectData.previousCompanies.join(', ')}
-        </p>
+  <span className="font-semibold text-gray-700">Current Companies:</span>{" "}
+  {projectData.currentCompanies ? projectData.currentCompanies.join(", ") : "N/A"}
+</p>
+<p className="text-lg">
+  <span className="font-semibold text-gray-700">Previous Companies:</span>{" "}
+  {projectData.previousCompanies ? projectData.previousCompanies.join(", ") : "N/A"}
+</p>
+
       </div>
       <div>
         <h2 className="text-2xl font-semibold text-gray-800 mb-4">Questions:</h2>
@@ -475,7 +478,7 @@ const getColorForPercentage = (percentage: number) => {
         <p className="text-sm">
           <strong>LinkedIn:</strong>{" "}
           <a
-            href={expert.linkedinUrl}
+            href={`https://${expert.linkedinUrl}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline"

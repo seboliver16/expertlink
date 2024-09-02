@@ -7,6 +7,7 @@ import { db } from "../../firebase.config";
 import Image from "next/image";
 import { useUser } from "../../UserContext";
 import Project from "@/app/models/project";
+import User from "@/app/models/User";
 
 const DashboardPage = () => {
   const { user, setUser } = useUser();
@@ -47,14 +48,18 @@ const DashboardPage = () => {
         if (docSnap.exists()) {
           const name = docSnap.data()?.name;
           if (name) {
-            const updatedUser = {
-              ...user,
+            const updatedUser = new User(
+              user.id,
               name,
-              addProject: user.addProject,
-              updateProjectStatus: user.updateProjectStatus,
-              useCredit: user.useCredit,
-              addCredit: user.addCredit,
-            };
+              user.email,
+              user.type,
+              user.linkedinId,
+              user.projects,
+              user.credits,
+              user.status,
+              user.projectsCompleted,
+              user.lifetimeIncome
+            );
             setUser(updatedUser);
             await updateDoc(doc(db, "users", user.email), { name });
           }
@@ -90,8 +95,8 @@ const DashboardPage = () => {
               data.title,
               data.description,
               data.questions,
-              data.expertStatus,
-              data.seekerStatus,
+              new Map(Object.entries(data.expertStatus)),
+              new Map(Object.entries(data.seekerStatus)),
               data.categories,
               data.askingPrice,
               data.availability
@@ -260,7 +265,7 @@ const DashboardPage = () => {
               <div key={project.id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-800">{project.title}</h2>
-                  <span className="text-lg">{getStatusIcon(project.expertStatus)}</span>
+                  <span className="text-lg">{getStatusIcon(Array.from(project.expertStatus.values())[0])}</span>
                 </div>
                 <p className="text-gray-600 mt-2">{project.description}</p>
                 <button

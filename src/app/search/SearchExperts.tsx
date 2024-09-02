@@ -5,7 +5,6 @@ import { doc, collection, setDoc, updateDoc, increment } from "firebase/firestor
 import { db } from "../firebase.config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-import User from "../models/User";
 import { useUser } from "../UserContext";
 import Project from "../models/project";
 
@@ -44,14 +43,23 @@ const SearchExperts: React.FC<SearchExpertsProps> = ({
       // Use a credit for project creation
       user.useCredit();
 
+      // Initialize the expertStatus and seekerStatus as maps
+      const expertStatus = new Map<string, string>();
+      const seekerStatus = new Map<string, string>();
+
+      // Assuming the seeker ID is the current user's ID
+      const seekerId = user.id;
+      expertStatus.set(seekerId, "Open Opportunity");
+      seekerStatus.set(seekerId, "Pending Response");
+
       // Create a new Project instance
       const project = new Project(
         projectID,
         projectTitle,
         `A project regarding the role: ${selectedRole}`, // Description placeholder
-        questions,
-        "Open Opportunity", // Expert status
-        "Pending Response", // Seeker status
+        questions.filter((q) => q.trim().length > 0),
+        expertStatus, // Expert status map
+        seekerStatus, // Seeker status map
         ["General"] // Categories can be set more dynamically if needed
       );
 
