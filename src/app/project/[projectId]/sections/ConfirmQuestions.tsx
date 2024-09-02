@@ -114,7 +114,7 @@ const ConfirmQuestions: React.FC<ConfirmQuestionsProps> = ({
       };
 
       // Add a new document to the emails collection
-      const emailRef = doc(db, 'emails', expertId); // Generate a new document reference with expertId as the document ID
+      const emailRef = doc(db, 'emails', expertId +"_"+ projectId); // Generate a new document reference with expertId as the document ID
       batch.set(emailRef, emailData);
     });
 

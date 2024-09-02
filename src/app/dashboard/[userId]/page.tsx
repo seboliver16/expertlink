@@ -248,7 +248,7 @@ const DashboardPage = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => router.push("/profile")}
+            onClick={() => router.push(`${user!.linkedinId}/profile`)}
             className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white cursor-pointer transition-all"
           >
             {user?.name?.[0] || "?"}
