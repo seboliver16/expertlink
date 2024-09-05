@@ -86,6 +86,7 @@ const DashboardPage = () => {
     const fetchProjects = async () => {
       if (user && user.type === "expert") {
         try {
+          console.log("USER EMAIL IS HERE", user.email)
           const projectsRef = collection(db, `projects/${user.email}/userProjects`);
           const projectsSnapshot = await getDocs(projectsRef);
           const projectsList = projectsSnapshot.docs.map((doc) => {
@@ -94,6 +95,7 @@ const DashboardPage = () => {
               doc.id,
               data.title,
               data.description,
+              data.objective,
               data.questions,
               new Map(Object.entries(data.expertStatus)),
               new Map(Object.entries(data.seekerStatus)),
@@ -258,28 +260,55 @@ const DashboardPage = () => {
 
       {/* Main Content Section */}
       <section className="flex-grow w-full max-w-7xl flex flex-col items-center">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Welcome, {user?.name}!</h2>
-        {projects.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
-            {projects.map((project) => (
-              <div key={project.id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-800">{project.title}</h2>
-                  <span className="text-lg">{getStatusIcon(Array.from(project.expertStatus.values())[0])}</span>
-                </div>
-                <p className="text-gray-600 mt-2">{project.description}</p>
-                <button
-                  onClick={() => router.push(`/projects/${project.id}`)}
-                  className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-all"
-                >
-                  View Project
-                </button>
-              </div>
-            ))}
+        <h2 className="text-3xl font-bold text-gray-800 mb-6">
+  Welcome 
+  {(() => {
+    const nameArray = user?.name ? user.name.split(" ") : [];
+    if (nameArray.length <= 1) {
+      return " " + user?.name || "";
+    } else {
+      return " " + nameArray[0]; // Return the first name if there are more than one
+    }
+  })()}!
+</h2>
+
+       {projects.length > 0 ? (
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full">
+    {projects.map((project) => (
+      <div
+        key={project.id}
+        className="bg-white p-4 rounded-2xl shadow-md transition-shadow duration-300 h-full flex flex-col justify-between"
+      >
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-md font-semibold text-gray-900 leading-tight">
+              {project.title}
+            </h2>
+            <span className="text-sm text-blue-500">
+              {getStatusIcon(Array.from(project.expertStatus.values())[0])}
+            </span>
           </div>
-        ) : (
-          <p className="text-xl font-semibold text-gray-700">No projects found.</p>
-        )}
+          <p className="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-6">
+            {project.description}
+          </p>
+        </div>
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2 px-6 rounded-full hover:scale-105 transition-transform duration-300"
+          >
+            View Project
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+) : (
+  <p className="text-xl font-semibold text-gray-700">No projects found.</p>
+)}
+
+
+
       </section>
     </main>
   );

@@ -36,6 +36,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const data = projectData as {
                 title: string;
                 description: string;
+                objective: string;
                 questions: string[];
                 expertStatus: Record<string, string>;
                 seekerStatus: Record<string, string>;
@@ -50,6 +51,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   id,
                   data.title,
                   data.description,
+                  data.objective,
                   data.questions || [],
                   new Map(Object.entries(data.expertStatus || {})),
                   new Map(Object.entries(data.seekerStatus || {})),

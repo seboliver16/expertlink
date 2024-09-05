@@ -2,6 +2,7 @@ class Project {
   id: string;
   title: string;
   description: string;
+  objective: string;
   questions: string[];
   expertStatus: Map<string, string>;
   seekerStatus: Map<string, string>;
@@ -14,6 +15,7 @@ class Project {
     id: string,
     title: string,
     description: string,
+    objective: string,
     questions: string[],
     expertStatus: Map<string, string>,
     seekerStatus: Map<string, string>,
@@ -24,6 +26,7 @@ class Project {
     this.id = id;
     this.title = title;
     this.description = description;
+    this.objective = objective;
     this.questions = questions;
     this.expertStatus = expertStatus;
     this.seekerStatus = seekerStatus;

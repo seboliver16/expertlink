@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPencilAlt } from '@fortawesome/free-solid-svg-icons/faPencilAlt';
 import { faCaretDown } from '@fortawesome/free-solid-svg-icons/faCaretDown';
 import ExpertCategories from './sections/ExpertCategories';
-import { faUserPlus, faCheckCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faUserPlus, faCheckCircle, faTrash, faBullseye, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
 const INITIALS_BACKGROUND_COLOR = "#0077B6"; // Ocean Blue
 
@@ -283,42 +283,55 @@ const getColorForPercentage = (percentage: number) => {
   };
 
   const renderProjectDetails = () => (
-    <div className="w-full max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-gray-800">Project: {projectData.title}</h1>
-        <button
-          onClick={() => setIsEditing(true)}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <FontAwesomeIcon icon={faPencilAlt} />
-        </button>
-      </div>
-      <div className="space-y-2">
-        <p className="text-lg">
-          <span className="font-semibold text-gray-700">Role:</span> {projectData.role}
-        </p>
-        <p className="text-lg">
-  <span className="font-semibold text-gray-700">Current Companies:</span>{" "}
-  {projectData.currentCompanies ? projectData.currentCompanies.join(", ") : "N/A"}
-</p>
-<p className="text-lg">
-  <span className="font-semibold text-gray-700">Previous Companies:</span>{" "}
-  {projectData.previousCompanies ? projectData.previousCompanies.join(", ") : "N/A"}
-</p>
+  <div className="w-full max-w-3xl space-y-6 mt-8">
+    <div className="flex items-center justify-between">
+      <h1 className="text-4xl font-bold text-gray-800">Project: {projectData.title}</h1>
+      <button
+        onClick={() => setIsEditing(true)}
+        className="text-gray-500 hover:text-gray-700"
+      >
+        <FontAwesomeIcon icon={faPencilAlt} />
+      </button>
+    </div>
 
+    <div className="space-y-4">
+      <div className="flex items-start space-x-4">
+        <div className="border border-gray-300 rounded-lg p-4 w-full">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold">Ideal Expert:</span> {projectData.objective}
+          </p>
+        </div>
       </div>
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">Questions:</h2>
-        <ul className="list-disc list-inside space-y-2">
-          {projectData.questions.map((question: string, index: number) => (
-            <li key={index} className="text-lg text-gray-700">
-              {question}
-            </li>
-          ))}
-        </ul>
+
+      <div className="flex items-start space-x-4">
+       
+        <div className="border border-gray-300 rounded-lg p-4 w-full">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold">  Description:</span> {projectData.description}
+          </p>
+        </div>
       </div>
     </div>
-  );
+
+   
+
+    <div>
+  <h2 className="text-lg font-semibold text-gray-800 mb-4">Questions:</h2>
+  <ul className="space-y-3">
+    {projectData.questions.map((question: string, index: number) => (
+      <li
+        key={index}
+        className="flex items-start text-sm text-gray-700 bg-gray-100 p-3 rounded-md shadow-sm"
+      >
+        <span className="mr-2 font-bold text-blue-500">{index + 1}.</span>
+        <span>{question}</span>
+      </li>
+    ))}
+  </ul>
+</div>
+
+  </div>
+);
 
   return (
     <div className="flex min-h-screen">

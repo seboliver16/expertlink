@@ -3,13 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import NarrowAsk from './NarrowAsk';
 import QualifyingQuestions from './QualifyingQuestions';
-import SearchExperts from './SearchExperts';
 import { useUser } from '../UserContext';
 
 interface ProjectCreationProps {
   collapsed: boolean;
   updateSidebar: () => void;
-  projectId: string | null;  // Add the projectId prop
+  projectId: string | null;
   reset: boolean;
 }
 
@@ -20,10 +19,12 @@ const ProjectCreation: React.FC<ProjectCreationProps> = ({
   reset,
 }) => {
   const [projectStep, setProjectStep] = useState(1);
-  const { user } = useUser(); // Now accessible if wrapped with UserProvider
+  const { user } = useUser();
   const [projectTitle, setProjectTitle] = useState<string>('');
+  const [projectObjective, setProjectObjective] = useState<string>(''); // State for objective
+  const [projectDescription, setProjectDescription] = useState<string>(''); // State for objective
   const [selectedRole, setSelectedRole] = useState<string>('');
-  const [selectedIndustry, setSelectedIndustry] = useState<string>(''); // Add industry state
+  const [selectedIndustry, setSelectedIndustry] = useState<string>(''); 
   const [selectedCurrentCompanies, setSelectedCurrentCompanies] = useState<string[]>([]);
   const [selectedPreviousCompanies, setSelectedPreviousCompanies] = useState<string[]>([]);
   const [questions, setQuestions] = useState<string[]>(Array(10).fill(''));
@@ -32,8 +33,10 @@ const ProjectCreation: React.FC<ProjectCreationProps> = ({
     if (reset) {
       setProjectStep(1);
       setProjectTitle('');
+      setProjectObjective(''); // Reset objective
+      setProjectDescription(''); 
       setSelectedRole('');
-      setSelectedIndustry(''); // Reset industry
+      setSelectedIndustry('');
       setSelectedCurrentCompanies([]);
       setSelectedPreviousCompanies([]);
       setQuestions(Array(10).fill(''));
@@ -44,34 +47,33 @@ const ProjectCreation: React.FC<ProjectCreationProps> = ({
     <div style={{ marginLeft: collapsed ? '0rem' : '4rem', transition: 'margin-left 0.3s ease', padding: projectStep === 2 ? '24px' : '0px' }}>
       {projectStep === 1 && (
         <NarrowAsk
-  projectStep={projectStep}
-  setProjectStep={setProjectStep}
-  selectedIndustry={selectedIndustry} // Pass industry
-  setSelectedIndustry={setSelectedIndustry} // Pass industry setter
-  selectedRole={selectedRole}
-  setSelectedRole={setSelectedRole}
-  selectedCurrentCompanies={selectedCurrentCompanies}
-  setSelectedCurrentCompanies={setSelectedCurrentCompanies}
-  selectedPreviousCompanies={selectedPreviousCompanies}
-  setSelectedPreviousCompanies={setSelectedPreviousCompanies}
-/>
+          projectStep={projectStep}
+          setProjectStep={setProjectStep}
+          objective={projectObjective} // Pass objective as a prop
+          setObjective={setProjectObjective} // Pass the setter function
+          description={projectDescription}
+          setDescription={setProjectDescription}
+        />
       )}
       {projectStep === 2 && (
         <QualifyingQuestions
-    projectStep={projectStep}
-    setProjectStep={setProjectStep}
-    projectTitle={projectTitle}
-    setProjectTitle={setProjectTitle}
-    questions={questions}
-    setQuestions={setQuestions}
-    updateSidebar={updateSidebar}
-    selectedIndustry={selectedIndustry} // Pass industry
-    selectedRole={selectedRole} // Pass role
-    selectedCurrentCompanies={selectedCurrentCompanies} // Pass current companies
-    selectedPreviousCompanies={selectedPreviousCompanies} // Pass previous companies
-  />
+          projectStep={projectStep}
+          objective={projectObjective} // Pass objective as a prop
+          setProjectObjective={setProjectObjective}
+          description={projectDescription} // Pass description as a prop
+          setProjectDescription={setProjectDescription}
+          setProjectStep={setProjectStep}
+          projectTitle={projectTitle}
+          setProjectTitle={setProjectTitle}
+          questions={questions}
+          setQuestions={setQuestions}
+          updateSidebar={updateSidebar}
+          selectedIndustry={selectedIndustry}
+          selectedRole={selectedRole}
+          selectedCurrentCompanies={selectedCurrentCompanies}
+          selectedPreviousCompanies={selectedPreviousCompanies}
+        />
       )}
-      
     </div>
   );
 };

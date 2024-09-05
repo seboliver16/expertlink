@@ -14,13 +14,17 @@ interface QualifyingQuestionsProps {
   setProjectStep: (step: number) => void;
   projectTitle: string;
   setProjectTitle: (title: string) => void;
+  setProjectObjective: (objective: string) => void; // Fix: Make sure the prop is correctly defined
   questions: string[];
+  objective: string;
+  description: string;
+  setProjectDescription: (objective: string) => void; // Fix: Make sure the prop is correctly defined
   setQuestions: (questions: string[]) => void;
   updateSidebar: () => void;
-  selectedIndustry: string; // Receive industry
-  selectedRole: string; // Receive role
-  selectedCurrentCompanies: string[]; // Receive current companies
-  selectedPreviousCompanies: string[]; // Receive previous companies
+  selectedIndustry: string;
+  selectedRole: string;
+  selectedCurrentCompanies: string[];
+  selectedPreviousCompanies: string[];
 }
 
 const QualifyingQuestions: React.FC<QualifyingQuestionsProps> = ({
@@ -28,7 +32,11 @@ const QualifyingQuestions: React.FC<QualifyingQuestionsProps> = ({
   setProjectStep,
   projectTitle,
   setProjectTitle,
+  setProjectObjective,
+  setProjectDescription,
   questions,
+  objective, // Make sure the objective is passed as a prop
+  description,
   setQuestions,
   updateSidebar,
   selectedIndustry,
@@ -48,6 +56,14 @@ const QualifyingQuestions: React.FC<QualifyingQuestionsProps> = ({
     setProjectTitle(e.target.value);
   };
 
+  const handleObjectiveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProjectObjective(e.target.value); // Fix: Properly update the objective
+  };
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProjectDescription(e.target.value); // Fix: Properly update the objective
+  };
+
   const handleQuestionChange = (index: number, value: string) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index] = value;
@@ -55,66 +71,59 @@ const QualifyingQuestions: React.FC<QualifyingQuestionsProps> = ({
   };
 
   const isFormValid = (): boolean => {
-    return projectTitle.trim().length > 0;
+    return projectTitle.trim().length > 0 && objective.trim().length > 0; // Fix: Ensure objective is included in validation
   };
 
   const createProject = async () => {
-  if (!user) {
-    console.error("User is not available");
-    return;
-  }
+    if (!user) {
+      console.error("User is not available");
+      return;
+    }
 
-  if (!isFormValid()) return;
+    if (!isFormValid()) return;
 
-  const projectId = uuidv4(); // Generate a UUID for the project ID
+    const projectId = uuidv4(); // Generate a UUID for the project ID
 
-  const description = "A detailed description of the project"; // Replace with the actual description from your form
-  const askingPrice = 0; // Replace with the actual asking price from your form
-  const availability = [""]; // Replace with actual availability from your form
+    const askingPrice = 0; // Replace with the actual asking price from your form
+    const availability = [""]; // Replace with actual availability from your form
 
-  // Initialize the expertStatus and seekerStatus as empty maps
-  const expertStatus = new Map<string, string>();
-  const seekerStatus = new Map<string, string>();
+    const expertStatus = new Map<string, string>();
+    const seekerStatus = new Map<string, string>();
 
-  // Example of setting values, you can remove these or set as needed
-  expertStatus.set("exampleExpertId", "Open Opportunity");
-  seekerStatus.set("exampleSeekerId", "Pending Response");
+    expertStatus.set("exampleExpertId", "Open Opportunity");
+    seekerStatus.set("exampleSeekerId", "Pending Response");
 
-  const projectData = new Project(
-    projectId,
-    projectTitle,
-    description,
-    questions.filter((q) => q.trim().length > 0),
-    expertStatus, // Expert status map
-    seekerStatus, // Seeker status map
-    ["General"],
-    askingPrice,
-    availability
-  );
+    const projectData = new Project(
+      projectId,
+      projectTitle,
+      description,
+      objective, // Use the passed objective here
+      questions.filter((q) => q.trim().length > 0),
+      expertStatus,
+      seekerStatus,
+      ["General"],
+      askingPrice,
+      availability
+    );
 
-  try {
-    // Convert Map to plain object for Firestore
-    const projectDataForFirestore = {
-      ...projectData,
-      expertStatus: Object.fromEntries(expertStatus),
-      seekerStatus: Object.fromEntries(seekerStatus),
-    };
+    try {
+      const projectDataForFirestore = {
+        ...projectData,
+        expertStatus: Object.fromEntries(expertStatus),
+        seekerStatus: Object.fromEntries(seekerStatus),
+      };
 
-    // Save the project to Firestore under the expert seeker’s projects
-    const userProjectRef = doc(db, `projects/${user.id}/userProjects/${projectId}`);
-    await setDoc(userProjectRef, projectDataForFirestore);
+      const userProjectRef = doc(db, `projects/${user.id}/userProjects/${projectId}`);
+      await setDoc(userProjectRef, projectDataForFirestore);
 
-    user.addProject(projectData);
-    updateSidebar(); // Update the sidebar with the new project
+      user.addProject(projectData);
+      updateSidebar();
 
-    router.push(`/project/${projectId}`); // Navigate to the project page
-  } catch (error) {
-    console.error("Error creating project: ", error);
-  }
-};
-
-
-  
+      router.push(`/project/${projectId}`);
+    } catch (error) {
+      console.error("Error creating project: ", error);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
@@ -130,6 +139,8 @@ const QualifyingQuestions: React.FC<QualifyingQuestionsProps> = ({
           }`}
         />
         <p className="text-sm text-gray-500 text-right">{projectTitle.length}/25</p>
+
+        
         <div className="mt-6 space-y-4">
           {questions.map((question, index) => (
             <input
@@ -147,6 +158,7 @@ const QualifyingQuestions: React.FC<QualifyingQuestionsProps> = ({
           ))}
           <p className="text-sm text-gray-500 text-right mt-2">Max 10 questions</p>
         </div>
+
         <div className="flex justify-between mt-8 gap-4">
           <button
             onClick={() => setProjectStep(projectStep - 1)}

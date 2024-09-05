@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { doc, getDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { doc, DocumentData, getDoc, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/app/firebase.config";
 import { useUser } from "@/app/UserContext";
+import { DateTime } from 'luxon';
 
 interface ConfirmQuestionsProps {
   onClose: () => void;
@@ -25,22 +26,26 @@ const ConfirmQuestions: React.FC<ConfirmQuestionsProps> = ({
 }) => {
   const { user } = useUser();
   const [projectDescription, setProjectDescription] = useState<string>("");
+  const [projectName, setProjectName] = useState<string>("");
   const [questions, setQuestions] = useState<string[]>(Array(10).fill(""));
   const [loading, setLoading] = useState(true);
+  const [projectData, setProjectData] = useState<DocumentData>();
   const [experts, setExperts] = useState<{ [key: string]: Expert }>({});
+
 
   useEffect(() => {
     const fetchProjectData = async () => {
       if (user && projectId) {
         try {
-          const docRef = doc(db, `projects/${user.id}/userProjects/${projectId}`);
+          const docRef = doc(db, `projects/${user.email}/userProjects/${projectId}`);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            const projectData = docSnap.data();
+            setProjectData(docSnap.data())
             setProjectDescription(projectData?.description || "");
+            setProjectName(projectData?.title || "");
             setQuestions((prevQuestions) =>
-              projectData?.questions
-                ? [...projectData.questions, ...prevQuestions.slice(projectData.questions.length)]
+              docSnap.data().questions
+                ? [...docSnap.data().questions, ...prevQuestions.slice(docSnap.data().questions.length)]
                 : prevQuestions
             );
           }
@@ -91,10 +96,11 @@ const ConfirmQuestions: React.FC<ConfirmQuestionsProps> = ({
   const handleSend = async () => {
   try {
     console.log('Updating project questions...');
+    console.log("PROJECT DATA",projectData)
     const updatedQuestions = questions.filter((q) => q.trim().length > 0);
 
     // Update the project's questions in Firestore if needed
-    // await updateDoc(doc(db, `projects/${user.id}/userProjects/${projectId}`), {
+    // await updateDoc(doc(db, `projects/${user.email}userProjects/${projectId}`), {
     //   questions: updatedQuestions,
     // });
 
@@ -109,13 +115,18 @@ const ConfirmQuestions: React.FC<ConfirmQuestionsProps> = ({
       const emailData = {
         expertName: expert.name,
         expertEmail: expert.email,
-        projectName: "Project Name",  // or the actual project name if available
-        projectDescription: "Project description",
+        projectName: projectData?.title,  // or the actual project name if available
+        projectDescription: projectData?.description,
+        time: DateTime.now().toISO()
       };
 
       // Add a new document to the emails collection
       const emailRef = doc(db, 'emails', expertId +"_"+ projectId); // Generate a new document reference with expertId as the document ID
       batch.set(emailRef, emailData);
+
+      // Add the project to the expert's collection
+      const expertProjectRef = doc(db, `projects/${expert.email}/userProjects/${projectId}`);
+      batch.set(expertProjectRef, projectData);
     });
 
     // Commit the batch
@@ -143,8 +154,8 @@ const ConfirmQuestions: React.FC<ConfirmQuestionsProps> = ({
         ) : (
           <>
             <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-2">Project Description</h3>
-              <p className="text-gray-700">{projectDescription}</p>
+              {/* <h3 className="text-lg font-semibold mb-2">{projectData!.title}</h3>
+              <p className="text-gray-700">{projectData!.description}</p> */}
             </div>
             <div className="flex-1 overflow-auto">
               <h3 className="text-lg font-semibold mb-2">Experts Being Contacted</h3>

@@ -95,3 +95,18 @@ html {
   padding: 0;
   z-index: 50;
 }
+
+@keyframes border-shine {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 200% 200%;
+  }
+}
+
+.animate-border-shine {
+  background-size: 200% 200%;
+  animation: border-shine 4s linear infinite;
+}
